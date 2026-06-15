@@ -53,4 +53,10 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only start a long-running server when not running on Vercel (serverless)
+if (!process.env.VERCEL) {
+  startServer();
+} else {
+  // In serverless environments, initialization is handled per-function in api/index.js
+  logger.info('Detected Vercel environment; skipping long-running server start');
+}
