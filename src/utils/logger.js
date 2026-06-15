@@ -37,12 +37,19 @@ const consoleFormat = winston.format.combine(
   )
 );
 
+import os from 'os';
+
+const getLogDir = () => {
+  if (process.env.VERCEL) {
+    return path.join(os.tmpdir(), 'logs');
+  }
+  return path.resolve('logs');
+};
+
 const isWritableLogDir = () => {
   try {
-    const logDir = path.resolve('logs');
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true });
-    }
+    const logDir = getLogDir();
+    fs.mkdirSync(logDir, { recursive: true });
     fs.accessSync(logDir, fs.constants.W_OK);
     return true;
   } catch (err) {
@@ -57,14 +64,15 @@ const transports = [
 ];
 
 if (isWritableLogDir()) {
+  const logDir = getLogDir();
   transports.push(
     new winston.transports.File({
-      filename: 'logs/error.log',
+      filename: path.join(logDir, 'error.log'),
       level: 'error',
       format: fileFormat,
     }),
     new winston.transports.File({
-      filename: 'logs/combined.log',
+      filename: path.join(logDir, 'combined.log'),
       format: fileFormat,
     }),
   );
