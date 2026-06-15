@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import winston from 'winston';
 
 const levels = {
@@ -35,20 +37,40 @@ const consoleFormat = winston.format.combine(
   )
 );
 
+const isWritableLogDir = () => {
+  try {
+    const logDir = path.resolve('logs');
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    fs.accessSync(logDir, fs.constants.W_OK);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 const transports = [
   new winston.transports.Console({
-    format: consoleFormat
-  }),
-  new winston.transports.File({
-    filename: 'logs/error.log',
-    level: 'error',
-    format: fileFormat
-  }),
-  new winston.transports.File({ 
-    filename: 'logs/combined.log',
-    format: fileFormat
+    format: consoleFormat,
   }),
 ];
+
+if (isWritableLogDir()) {
+  transports.push(
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+      format: fileFormat,
+    }),
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+      format: fileFormat,
+    }),
+  );
+} else {
+  console.warn('Logger warning: logs directory unavailable, using console-only logging');
+}
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'debug',
