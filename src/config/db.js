@@ -3,7 +3,6 @@ import logger from "../utils/logger.js";
 import { env } from "./env.js";
 
 const connectDB = async () => {
-  console.log(process.env.MONGODB_URI);
   try {
     const connectionInstance = await mongoose.connect(process.env.MONGODB_URI, {
       maxPoolSize: env.isProduction ? 20 : 10,
@@ -15,9 +14,11 @@ const connectDB = async () => {
     logger.info(
       `MongoDB Connected! HOST: ${connectionInstance.connection.host}, DB: ${connectionInstance.connection.name}`,
     );
+    return connectionInstance;
   } catch (error) {
     logger.error(`MongoDB Connection FAILED: ${error.message}`);
-    process.exit(1);
+    // Throw error so callers (including serverless handlers) can handle it
+    throw error;
   }
 };
 
