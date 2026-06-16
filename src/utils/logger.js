@@ -37,47 +37,45 @@ const consoleFormat = winston.format.combine(
   )
 );
 
-import os from 'os';
-
-const getLogDir = () => {
-  if (process.env.VERCEL) {
-    return path.join(os.tmpdir(), 'logs');
-  }
-  return path.resolve('logs');
-};
-
-const isWritableLogDir = () => {
-  try {
-    const logDir = getLogDir();
-    fs.mkdirSync(logDir, { recursive: true });
-    fs.accessSync(logDir, fs.constants.W_OK);
-    return true;
-  } catch (err) {
-    return false;
-  }
-};
-
 const transports = [
   new winston.transports.Console({
     format: consoleFormat,
   }),
 ];
 
-if (isWritableLogDir()) {
-  const logDir = getLogDir();
-  transports.push(
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      format: fileFormat,
-    }),
-    new winston.transports.File({
-      filename: path.join(logDir, 'combined.log'),
-      format: fileFormat,
-    }),
-  );
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.FUNCTIONS_WORKER_RUNTIME);
+
+if (!isServerless) {
+  const getLogDir = () => path.resolve('logs');
+  const isWritableLogDir = () => {
+    try {
+      const logDir = getLogDir();
+      fs.mkdirSync(logDir, { recursive: true });
+      fs.accessSync(logDir, fs.constants.W_OK);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  if (isWritableLogDir()) {
+    const logDir = getLogDir();
+    transports.push(
+      new winston.transports.File({
+        filename: path.join(logDir, 'error.log'),
+        level: 'error',
+        format: fileFormat,
+      }),
+      new winston.transports.File({
+        filename: path.join(logDir, 'combined.log'),
+        format: fileFormat,
+      }),
+    );
+  } else {
+    console.warn('Logger warning: logs directory unavailable, using console-only logging');
+  }
 } else {
-  console.warn('Logger warning: logs directory unavailable, using console-only logging');
+  console.warn('Serverless environment detected, using console-only logging');
 }
 
 const logger = winston.createLogger({
