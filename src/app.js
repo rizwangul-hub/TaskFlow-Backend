@@ -113,6 +113,14 @@ app.use(
 );
 
 // ─── Health Check (deployment probes) ─────────────────────────────────────────
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Welcome to TaskFlow API",
+    status: "healthy",
+    docs: "/api-docs"
+  });
+});
 app.get("/health", healthCheck);
 
 // ─── API Documentation ───────────────────────────────────────────────────────
